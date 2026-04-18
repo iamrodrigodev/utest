@@ -1,102 +1,133 @@
-﻿# Unit Tests with Mockito
+﻿# Pruebas Unitarias con Mockito
 
-## Objective
-Implement complete unit tests for:
+## Objetivo
+Implementar y documentar una suite de pruebas unitarias completa para las clases:
 
 - `BinaryTree`
 - `CircleLinkedList`
 - `DynamicArray`
 
-The suite covers normal flows, boundary conditions, error paths, and branch-heavy cases.
-Mockito is used to verify interactions in traversal output and iterator consumers.
+La suite fue diseñada para cubrir:
 
-## Test Cases by Class
+- Casos normales (flujo esperado).
+- Casos de borde/extremos (límites de índices, estructuras vacías, nodos especiales).
+- Casos de error (excepciones y retornos de fallo).
+- Ramas críticas de lógica interna (especialmente en `remove` de árbol y en iteradores).
+- Verificación de interacciones usando Mockito.
+
+## Enfoque de Diseño de Casos
+Se aplicó una estrategia de caja negra funcional + cobertura de ramas relevantes:
+
+1. Validar comportamiento correcto en uso típico.
+2. Probar entradas inválidas y estados límite.
+3. Forzar rutas internas complejas que suelen generar bugs.
+4. Verificar efectos observables (salida, tamaño, enlaces y orden).
+5. Usar Mockito para confirmar interacciones (no solo valores de retorno).
+
+## Casos Diseñados por Clase
 
 ### 1) `CircleLinkedListTest`
-File: `src/test/java/utest/evidencia1/clases/CircleLinkedListTest.java`
+Archivo: `src/test/java/utest/evidencia1/clases/CircleLinkedListTest.java`
 
-Covered cases:
+#### Casos normales
+1. Estado inicial del constructor: tamaño `0` y representación vacía.
+2. `append` de varios elementos mantiene orden y aumenta tamaño.
+3. `remove` en posición intermedia elimina el elemento correcto y ajusta tamaño.
+4. `remove` en primera posición actualiza correctamente la lista.
+5. `remove` en última posición actualiza correctamente el final de la lista.
 
-1. Constructor initial state (`getSize` and string representation).
-2. Append multiple values and keep insertion order.
-3. Append `null` must throw `NullPointerException`.
-4. Remove middle position (normal case).
-5. Remove first position.
-6. Remove last position and tail update behavior.
-7. Remove with negative position (error case).
-8. Remove with position greater than size (error case).
-9. Remove on empty list at index `0` (current implementation throws `NullPointerException`).
-10. Remove at index equal to size (documented current behavior in implementation).
+#### Casos de borde y error
+6. `append(null)` lanza `NullPointerException`.
+7. `remove` con índice negativo lanza `IndexOutOfBoundsException`.
+8. `remove` con índice mayor que el tamaño lanza `IndexOutOfBoundsException`.
+9. `remove(0)` en lista vacía: se documenta el comportamiento actual (lanza `NullPointerException`).
+10. `remove(pos == size)`: se documenta explícitamente el comportamiento actual de la implementación.
 
 ### 2) `DynamicArrayTest`
-File: `src/test/java/utest/evidencia1/clases/DynamicArrayTest.java`
+Archivo: `src/test/java/utest/evidencia1/clases/DynamicArrayTest.java`
 
-Covered cases:
+#### Casos normales
+1. Flujo `add/get/put` para validar inserción y actualización.
+2. `remove(index)` elimina y desplaza elementos correctamente.
+3. `isEmpty` antes y después de insertar.
+4. `toString` omite posiciones nulas.
+5. `stream()` recorre elementos y permite agregación (suma).
+6. Iterador `hasNext/next` en secuencia normal.
 
-1. `add/get/put` normal flow.
-2. `remove(index)` normal flow and left-shift validation.
-3. `isEmpty` before/after insert.
-4. `toString` ignores null slots.
-5. `stream()` iteration and aggregation.
-6. Iterator `hasNext/next` sequence.
-7. Iterator `forEachRemaining` with Mockito `Consumer` verification.
-8. Iterator `forEachRemaining(null)` throws `NullPointerException`.
-9. Iterator behavior at end of sequence (documented current implementation path to `NoSuchElementException`).
-10. Iterator `remove()` behavior (current implementation semantics).
-11. Iterator double `remove()` throws `IllegalStateException`.
-12. Internal shrink scenario after many removals.
-13. `forEachRemaining` on empty array does not call consumer (Mockito `never`).
-14. Forced concurrent modification branch using reflection to trigger `ConcurrentModificationException`.
+#### Casos de borde y error
+7. `forEachRemaining(null)` lanza `NullPointerException`.
+8. Comportamiento al finalizar iteración (ruta hacia `NoSuchElementException` según implementación actual).
+9. `remove()` del iterador y su semántica actual.
+10. Doble `remove()` del iterador lanza `IllegalStateException`.
+11. Escenario de reducción interna tras múltiples eliminaciones.
+12. `forEachRemaining` en estructura vacía no debe invocar el consumidor.
+13. Rama de `ConcurrentModificationException` forzada para cubrir la validación interna.
+
+#### Mockito aplicado
+14. `forEachRemaining` con `Consumer` mock: se verifica que cada elemento esperado sea consumido exactamente una vez.
 
 ### 3) `BinaryTreeTest`
-File: `src/test/java/utest/evidencia1/clases/BinaryTreeTest.java`
+Archivo: `src/test/java/utest/evidencia1/clases/BinaryTreeTest.java`
 
-Covered cases:
+#### Casos de construcción y búsqueda
+1. Constructor por defecto crea árbol vacío.
+2. Constructor parametrizado asigna raíz correctamente.
+3. `put + find` para valor existente.
+4. `find` de valor inexistente retorna nodo padre esperado.
+5. `find` en árbol vacío retorna `null`.
 
-1. Default constructor creates empty tree.
-2. Parameterized constructor sets root.
-3. `put + find` for existing value.
-4. `find` for missing value returns expected parent.
-5. `find` on empty tree returns `null`.
-6. `remove` leaf node.
-7. `remove` missing value returns `false`.
-8. `remove` on empty tree (current implementation throws `NullPointerException`).
-9. `remove` root when it is a leaf.
-10. `remove` non-root leaf and parent unlink.
-11. `remove` root with only right child.
-12. `remove` root with only left child.
-13. `remove` non-root with only right child.
-14. `remove` non-root with only left child.
-15. `remove` root with 2 children (successor replacement).
-16. `remove` root with 2 children when successor is direct right child.
-17. `remove` root with 2 children when successor has right child.
-18. `remove` non-root with 2 children.
-19. `findSuccessor` normal case (minimum on right subtree).
-20. `findSuccessor` when node has no right child.
-21. `inOrder` traversal output order verified with Mockito (`PrintStream`).
-22. `preOrder` traversal output order verified with Mockito.
-23. `postOrder` traversal output order verified with Mockito.
-24. `bfs` traversal output order verified with Mockito (according to current implementation).
-25. Traversals with `null` root produce no output (`verifyNoInteractions`).
+#### Casos de eliminación (`remove`) por rama lógica
+6. Eliminar hoja.
+7. Intentar eliminar valor inexistente retorna `false`.
+8. Eliminar en árbol vacío: se documenta el comportamiento actual (`NullPointerException`).
+9. Eliminar raíz cuando es hoja (árbol queda vacío).
+10. Eliminar hoja no raíz y validar desvinculación del padre.
+11. Eliminar raíz con solo hijo derecho.
+12. Eliminar raíz con solo hijo izquierdo.
+13. Eliminar nodo no raíz con solo hijo derecho.
+14. Eliminar nodo no raíz con solo hijo izquierdo.
+15. Eliminar raíz con dos hijos (reemplazo por sucesor).
+16. Eliminar raíz con dos hijos cuando el sucesor es hijo derecho directo.
+17. Eliminar raíz con dos hijos cuando el sucesor tiene hijo derecho.
+18. Eliminar nodo no raíz con dos hijos.
 
-## Command to Run Tests
-Run in project root (`evidencia2`):
+#### Casos de sucesor
+19. `findSuccessor` normal: mínimo del subárbol derecho.
+20. `findSuccessor` cuando no hay hijo derecho (retorna el mismo nodo según implementación actual).
+
+#### Recorridos y salida
+21. `inOrder` en orden esperado.
+22. `preOrder` en orden esperado.
+23. `postOrder` en orden esperado.
+24. `bfs` en orden esperado según implementación actual.
+25. Recorridos con raíz `null` no imprimen salida.
+
+#### Mockito aplicado
+26. Verificación del orden de impresión (`PrintStream` mock) en recorridos.
+27. Verificación de ausencia de interacción cuando la raíz es `null`.
+
+## Comando para Ejecutar las Pruebas
+Ejecutar en la raíz del proyecto (`evidencia2`):
 
 ```bash
 mvn test
 ```
 
-## Evidence Image
-Place test execution screenshot at:
+## Resultado Esperado
+- `BUILD SUCCESS`
+- Todas las pruebas en verde (sin `Failures` ni `Errors`).
+
+## Evidencia (Imagen)
+Coloca la captura del resultado de ejecución en:
 
 `docs/img/test-run.png`
 
-Reference:
+Referencia en Markdown:
 
 ```markdown
-![Test run result](docs/img/test-run.png)
+![Resultado de ejecución de pruebas](docs/img/test-run.png)
 ```
 
-Example:
+Vista en el README:
 
-![Test run result](docs/img/test-run.png)
+![Resultado de ejecución de pruebas](docs/img/test-run.png)
